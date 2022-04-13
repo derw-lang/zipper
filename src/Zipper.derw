@@ -1,0 +1,222 @@
+import "../derw-packages/derw-lang/stdlib/src/List" as List
+import "../derw-packages/derw-lang/stdlib/src/Maybe" exposing ( Maybe, Nothing, Just )
+
+exposing (Zipper, ZipperNode)
+exposing (singleton, fromList, fromCons, from, withDefault)
+exposing (before, current, after, toList)
+exposing (map, mapBefore, mapCurrent, mapAfter)
+exposing (first, previous, next, last)
+exposing (find, findFirst, findNext)
+exposing (isLast, isFirst)
+
+type Zipper a =
+    ZipperNode { head: a,
+        previous: List a,
+        next: List a }
+
+singleton: a -> Zipper a
+singleton head =
+    ZipperNode {
+        head: head,
+        previous: [ ],
+        next: [ ]
+    }
+
+fromList: List a -> Maybe (Zipper a)
+fromList xs =
+    case xs of
+        head :: tail ->
+            ZipperNode {
+                head: head,
+                previous: [ ],
+                next: tail
+            }
+                |> (\x -> Just { value: x })
+
+        default ->
+            Nothing
+
+fromCons: a -> List a -> Zipper a
+fromCons head next =
+    ZipperNode {
+        head: head,
+        next: next,
+        previous: [ ]
+    }
+
+from: List a -> a -> List a -> Zipper a
+from previous head next =
+    ZipperNode {
+        head: head,
+        next: next,
+        previous: previous
+    }
+
+withDefault: a -> Maybe (Zipper a) -> Zipper a
+withDefault head zipper =
+    case zipper of
+        Nothing ->
+            ZipperNode {
+                head: head,
+                next: [ ],
+                previous: [ ]
+            }
+
+        Just { value } ->
+            value
+
+
+before: Zipper a -> List a
+before zipper =
+    zipper.previous
+
+current: Zipper a -> a
+current zipper =
+    zipper.head
+
+after: Zipper a -> List a
+after zipper =
+    zipper.next
+
+toList: Zipper a -> List a
+toList zipper =
+    List.append zipper.previous (zipper.head :: zipper.next)
+
+map: (a -> b) -> Zipper a -> Zipper b
+map fn zipper =
+    ZipperNode {
+        head: fn zipper.head,
+        previous: List.map fn zipper.previous,
+        next: List.map fn zipper.next
+    }
+
+mapBefore: (a -> a) -> Zipper a -> Zipper a
+mapBefore fn zipper =
+    ZipperNode {
+        head: zipper.head,
+        previous: List.map fn zipper.previous,
+        next: zipper.next
+    }
+
+mapCurrent: (a -> a) -> Zipper a -> Zipper a
+mapCurrent fn zipper =
+    ZipperNode {
+        head: fn zipper.head,
+        previous: zipper.previous,
+        next: zipper.next
+    }
+
+mapAfter: (a -> a) -> Zipper a -> Zipper a
+mapAfter fn zipper =
+    ZipperNode {
+        head: zipper.head,
+        previous: zipper.previous,
+        next: List.map fn zipper.next
+    }
+
+first: Zipper a -> Zipper a
+first zipper =
+    case zipper.previous of
+        [] ->
+            zipper
+
+        x :: rest ->
+            ZipperNode {
+                head: x,
+                previous: [ ],
+                next: List.append rest zipper.next
+            }
+
+        default ->
+            zipper
+
+previous: Zipper a -> Maybe (Zipper a)
+previous zipper =
+    case zipper.previous of
+        x :: rest ->
+            let
+                previousLength: number
+                previousLength =
+                    zipper.previous.length - 1
+            in
+                ZipperNode {
+                    head: rest[rest.length - 1],
+                    previous: List.take previousLength zipper.previous,
+                    next: zipper.head :: zipper.next
+                }
+                    |> (\x -> Just { value: x })
+
+        default ->
+            Nothing
+
+next: Zipper a -> Maybe (Zipper a)
+next zipper =
+    case zipper.next of
+        x :: rest ->
+            ZipperNode {
+                head: x,
+                previous: List.append zipper.previous [ zipper.head ],
+                next: rest
+            }
+                |> (\x -> Just { value: x })
+
+        default ->
+            Nothing
+
+last: Zipper a -> Zipper a
+last zipper =
+    case zipper.next of
+        [] ->
+            zipper
+
+        x :: [] ->
+            ZipperNode {
+                head: x,
+                previous: List.append zipper.previous [ zipper.head ],
+                next: [ ]
+            }
+
+        x :: rest ->
+            case next zipper of
+                Just { value } ->
+                    last value
+
+                Nothing ->
+                    zipper
+
+        default ->
+            zipper
+
+find: (a -> boolean) -> Zipper a -> Maybe (Zipper a)
+find fn zipper =
+    if fn zipper.head then
+        Just { value: zipper }
+    else
+        case next zipper of
+            Just { value } ->
+                find fn value
+
+            default ->
+                Nothing
+
+findFirst: (a -> boolean) -> Zipper a -> Maybe (Zipper a)
+findFirst fn zipper =
+    first zipper
+        |> find fn
+
+findNext: (a -> boolean) -> Zipper a -> Maybe (Zipper a)
+findNext fn zipper =
+    case next zipper of
+        Nothing ->
+            Nothing
+
+        Just { value } ->
+            find fn value
+
+isLast: Zipper a -> boolean
+isLast zipper =
+    zipper.next.length == 0
+
+isFirst: Zipper a -> boolean
+isFirst zipper =
+    zipper.previous.length == 0

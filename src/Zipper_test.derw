@@ -1,0 +1,44 @@
+import "./Zipper" exposing (Zipper, ZipperNode, singleton, fromList, fromCons, from, withDefault, before, current, after, toList, first, previous, next, last, find, findFirst, findNext, isLast, isFirst)
+import "../derw-packages/derw-lang/stdlib/src/Test" exposing (equals)
+import "../derw-packages/derw-lang/stdlib/src/Maybe" exposing (Just, Nothing, Maybe)
+
+testSingleton: a -> void
+testSingleton =
+    singleton "hello"
+        |> equals (ZipperNode { head: "hello", next: [], previous: []})
+
+testFromEmptyList: a -> void
+testFromEmptyList =
+    fromList []
+        |> equals Nothing
+
+testFromOneElementList: a -> void
+testFromOneElementList =
+    fromList [ "hello" ]
+        |> equals (Just { value: (ZipperNode { head: "hello", next: [], previous: []}) })
+
+testFromTwoElementList: a -> void
+testFromTwoElementList =
+    fromList [ "hello", "world" ]
+        |> equals (Just { value: (ZipperNode { head: "hello", next: [ "world" ], previous: []}) })
+
+testFromEmptyListCons: a -> void
+testFromEmptyListCons =
+    fromCons "hello" []
+        |> equals (ZipperNode { head: "hello", next: [], previous: []})
+
+testFromOneElementListCons: a -> void
+testFromOneElementListCons =
+    fromCons "hello" [ "world" ]
+        |> equals (ZipperNode { head: "hello", next: [ "world"], previous: []})
+
+testFrom: a -> void
+testFrom =
+    from [] "hello" []
+        |> equals (ZipperNode { head: "hello", next: [], previous: []})
+
+testFromBeforeAndAfter: a -> void
+testFromBeforeAndAfter =
+    from ["dlorw"] "hello" [ "world" ]
+        |> equals (ZipperNode { head: "hello", next: [ "world"], previous: [ "dlorw"]})
+

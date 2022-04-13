@@ -1,0 +1,7 @@
+{
+    "name": "zipper",
+    "exposing": [],
+    "dependencies": {
+        "derw-lang/stdlib": "main"
+    }
+}
